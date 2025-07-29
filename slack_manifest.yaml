@@ -13,6 +13,10 @@ features:
       description: Chào bot của tôi
       usage_hint: tamnt1
       should_escape: false
+    - command: /ec2-list
+      description: List EC2 instances
+      usage_hint: tamnt1
+      should_escape: false
 oauth_config:
   scopes:
     bot:
