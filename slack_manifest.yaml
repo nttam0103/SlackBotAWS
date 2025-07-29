@@ -1,0 +1,42 @@
+# Slack Manifest Configuration
+# This file defines the configuration for the Slack app, including features, OAuth scopes, and event
+display_information:
+  name: AwsBot
+  description: aws bot
+  background_color: "#2e2e30"
+features:
+  bot_user:
+    display_name: AwsBot
+    always_online: false
+  slash_commands:
+    - command: /hello-bot
+      description: Chào bot của tôi
+      usage_hint: tamnt1
+      should_escape: false
+oauth_config:
+  scopes:
+    bot:
+      - channels:read
+      - chat:write
+      - commands
+      - app_mentions:read
+      - groups:read
+      - im:read
+      - mpim:read
+      - channels:history
+      - groups:history
+      - im:history
+      - mpim:history
+settings:
+  event_subscriptions:
+    bot_events:
+      - app_mention
+      - message.channels
+      - message.groups
+      - message.im
+      - message.mpim
+  interactivity:
+    is_enabled: true
+  org_deploy_enabled: false
+  socket_mode_enabled: true
+  token_rotation_enabled: false
