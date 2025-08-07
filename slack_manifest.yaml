@@ -16,7 +16,17 @@ features:
     - command: /ec2-list
       description: List EC2 instances
       usage_hint: tamnt1
+    - command: /ec2-stop
+      description: Stop an EC2 instance
+      usage_hint: tamnt1
+    - command: /ec2-start
+      description: Start an EC2 instance
+      usage_hint: tamnt1
       should_escape: false
+    - command: /ec2-list-all
+      description: List all EC2 instances in all regions
+      usage_hint: tamnt1
+
 oauth_config:
   scopes:
     bot:
