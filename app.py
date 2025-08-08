@@ -14,9 +14,9 @@ app = App(
 @app.command("/hello-bot")
 def handle_hello_bot_command(ack, respond, command, logger):
     ack() 
-    logger.info(f"Received /hello-bot command: {command}") # Log the command for debugging
+    logger.info(f"Received /hello-bot command: {command}") 
 
-    user_name = command["text"] if command["text"] else 'bạn' # Get the accompanying text, or default to 'bạn'
+    user_name = command["text"] if command["text"] else 'bạn' #
     respond(f"Xin chào {user_name}! Tôi là bot của bạn. Rất vui được gặp!")
 
 

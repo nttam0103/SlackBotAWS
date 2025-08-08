@@ -20,7 +20,7 @@ class EC2Service:
             response = ec2.describe_regions()
             return [region['RegionName'] for region in response['Regions']]
         except (ClientError, NoCredentialsError):
-            return self.common_regions  # fallback to common regions
+            return self.common_regions  
     
     def list_instances_in_region(self, region):
         """List instances in a specific region"""
@@ -84,34 +84,62 @@ class EC2Service:
             # Fallback to mock data if no credentials
             return self._get_mock_instances()
 
-    def _get_mock_instances(self):
-        """Mock data for testing"""
-        return [
-            {
-                'id': 'i-1234567890abcdef0',
-                'name': 'Web Server US-East',
-                'state': 'running',
-                'type': 't3.micro',
-                'region': 'us-east-1',
-                'az': 'us-east-1a'
-            },
-            {
-                'id': 'i-0987654321fedcba0',
-                'name': 'DB Server US-West',
-                'state': 'stopped',
-                'type': 't3.small',
-                'region': 'us-west-2',
-                'az': 'us-west-2b'
-            },
-            {
-                'id': 'i-abcdef1234567890',
-                'name': 'API Server Singapore',
-                'state': 'running',
-                'type': 't3.medium',
-                'region': 'ap-southeast-1',
-                'az': 'ap-southeast-1a'
+    def filter_instances(self, instances, state=None, region=None, name_filter=None):
+        """Filter instances by state, region, or name"""
+        filtered = instances
+        
+        if state:
+            filtered = [i for i in filtered if i['state'] == state]
+        
+        if region:
+            filtered = [i for i in filtered if i['region'] == region]
+        
+        if name_filter:
+            filtered = [i for i in filtered if name_filter.lower() in i['name'].lower()]
+        
+        return filtered
+
+    def paginate_instances(self, instances, page=1, per_page=20):
+        """Paginate instances list"""
+        total = len(instances)
+        start = (page - 1) * per_page
+        end = start + per_page
+        
+        return {
+            'instances': instances[start:end],
+            'pagination': {
+                'current_page': page,
+                'per_page': per_page,
+                'total_items': total,
+                'total_pages': (total + per_page - 1) // per_page,
+                'has_next': end < total,
+                'has_prev': page > 1
             }
-        ]
+        }
+
+
+    def _get_mock_instances(self):
+        """Mock data for testing - simulate 50+ instances"""
+        mock_instances = []
+        regions = ['us-east-1', 'us-west-2', 'ap-southeast-1', 'eu-west-1']
+        states = ['running', 'stopped', 'stopping', 'starting']
+        types = ['t3.micro', 't3.small', 't3.medium', 't3.large']
+        
+        for i in range(50):  # Generate 50 mock instances
+            region = regions[i % len(regions)]
+            state = states[i % len(states)]
+            instance_type = types[i % len(types)]
+            
+            mock_instances.append({
+                'id': f'i-{i:016x}',
+                'name': f'Server-{i+1:03d}',
+                'state': state,
+                'type': instance_type,
+                'region': region,
+                'az': f'{region}a'
+            })
+        
+        return mock_instances
             
     def start_instance(self, instance_id, region):
         """Start instance in specific region"""
