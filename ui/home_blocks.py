@@ -89,6 +89,23 @@ def ec2_modal_blocks(paginated_data):
                 'starting': '🟡', 'pending': '🟡'
             }.get(instance['state'], '⚪')
             
+            # overflow menu options
+            overflow_options = []
+            if instance['state'] == 'running':
+                overflow_options.append({
+                    "text": {"type": "plain_text", "text": "⏹️ Stop"},
+                    "value": f"stop|{instance['id']}|{region}"
+                })
+            elif instance['state'] == 'stopped':
+                overflow_options.append({
+                    "text": {"type": "plain_text", "text": "▶️ Start"},
+                    "value": f"start|{instance['id']}|{region}"
+                })
+            overflow_options.append({
+                "text": {"type": "plain_text", "text": "📊 View Status"},
+                "value": f"status|{instance['id']}|{region}"
+            })
+
             blocks.append({
                 "type": "section",
                 "text": {
@@ -96,13 +113,12 @@ def ec2_modal_blocks(paginated_data):
                     "text": f"{state_emoji} *{instance['name']}*\n`{instance['id']}` | {instance['type']} | {instance['state']}"
                 },
                 "accessory": {
-                    "type": "button",
-                    "text": {"type": "plain_text", "text": "Manage"},
-                    "value": f"{instance['id']}|{region}",
-                    "action_id": "modal_manage_instance"
+                    "type": "overflow",
+                    "options": overflow_options,
+                    "action_id": "instance_overflow_menu"
                 }
             })
-    
+
     # Pagination controls
     if pagination['total_pages'] > 1:
         blocks.append({"type": "divider"})
@@ -205,5 +221,49 @@ def create_access_denied_modal():
         "blocks": [{
             "type": "section",
             "text": {"type": "mrkdwn", "text": "❌ You are not authorized to use this feature."}
+        }]
+    }
+
+def instance_status_modal(status_info):
+    """Modal view for instance status"""
+    return {
+        "type": "modal",
+        "callback_id": "instance_status_modal",
+        "title": {"type": "plain_text", "text": "Instance Status"},
+        "close": {"type": "plain_text", "text": "Close"},
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*📊 Instance: `{status_info['id']}`*"
+                }
+            },
+            {"type": "divider"},
+            {
+                "type": "section",
+                "fields": [
+                    {"type": "mrkdwn", "text": f"*State:*\n{status_info['state']}"},
+                    {"type": "mrkdwn", "text": f"*Type:*\n{status_info['type']}"},
+                    {"type": "mrkdwn", "text": f"*Region:*\n{status_info['region']}"},
+                    {"type": "mrkdwn", "text": f"*Public IP:*\n{status_info['public_ip']}"},
+                    {"type": "mrkdwn", "text": f"*Private IP:*\n{status_info['private_ip']}"},
+                    {"type": "mrkdwn", "text": f"*Launch Time:*\n{status_info['launch_time']}"}
+                ]
+            }
+        ]
+    }
+
+def action_result_modal(title, message, is_success=True):
+    """Modal view for action result"""
+    emoji = "✅" if is_success else "❌"
+    return {
+        "type": "modal",
+        "callback_id": "action_result_modal",
+        "title": {"type": "plain_text", "text": title},
+        "close": {"type": "plain_text", "text": "Close"},
+        "blocks": [{
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": f"{emoji} {message}"}
         }]
     }

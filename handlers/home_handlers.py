@@ -1,5 +1,4 @@
 # handlers/home_handlers.py
-from ui.home_blocks import home_tab_blocks, ec2_modal_blocks, create_loading_modal, create_error_modal, create_access_denied_modal
 from services.ec2_service import EC2Service
 import os
 import time
@@ -7,6 +6,11 @@ import threading
 import logging
 from concurrent.futures import ThreadPoolExecutor
 import queue
+from ui.home_blocks import (
+    home_tab_blocks, ec2_modal_blocks, create_loading_modal, 
+    create_error_modal, create_access_denied_modal,
+    instance_status_modal, action_result_modal
+)
 
 def register_home_handlers(app):
     ec2_service = EC2Service()
@@ -42,7 +46,7 @@ def register_home_handlers(app):
                 client.views_update(view_id=view_id, view=error_modal)
             else:
                 # Update modal with actual data
-                paginated_data = ec2_service.paginate_instances(instances, page=1, per_page=20)
+                paginated_data = ec2_service.paginate_instances(instances, page=1, per_page=50)
                 modal_view = ec2_modal_blocks(paginated_data)
                 client.views_update(view_id=view_id, view=modal_view)
                 
@@ -146,6 +150,8 @@ def register_home_handlers(app):
     @app.view_closed("ec2_loading_modal")
     @app.view_closed("ec2_list_modal")
     @app.view_closed("ec2_error_modal")
+    @app.view_closed("instance_status_modal")
+    @app.view_closed("action_result_modal")
     def handle_modal_closed(ack, body):
         """Cleanup khi user đóng modal"""
         ack()
@@ -174,7 +180,7 @@ def register_home_handlers(app):
         page = int(body["actions"][0]["value"].split("_")[1])
         
         instances = get_user_instances(user_id)
-        paginated_data = ec2_service.paginate_instances(instances, page=page, per_page=20)
+        paginated_data = ec2_service.paginate_instances(instances, page=page, per_page=50)
         modal_view = ec2_modal_blocks(paginated_data)
         client.views_update(view_id=body["view"]["id"], view=modal_view)
     
@@ -185,10 +191,43 @@ def register_home_handlers(app):
         page = int(body["actions"][0]["value"].split("_")[1])
         
         instances = get_user_instances(user_id)
-        paginated_data = ec2_service.paginate_instances(instances, page=page, per_page=20)
+        paginated_data = ec2_service.paginate_instances(instances, page=page, per_page=50)
         modal_view = ec2_modal_blocks(paginated_data)
         client.views_update(view_id=body["view"]["id"], view=modal_view)
     
     @app.action("modal_page_info")
     def handle_modal_page_info(ack, body):
         ack()
+
+    @app.action("instance_overflow_menu")
+    def handle_instance_overflow(ack, body, client):
+        ack()
+
+        # Parse selected option value: "action|instance_id|region"
+        selected_option = body["actions"][0]["selected_option"]["value"]
+        action, instance_id, region = selected_option.split('|', 2)
+
+        # Route to appropriate action based on selection
+        if action == "start":
+            result = ec2_service.start_instance(instance_id, region)
+            if 'error' in result:
+                modal = action_result_modal("Start Instance", result['error'], False)
+            else:
+                modal = action_result_modal("Start Instance", result['success'], True)
+            client.views_push(view=modal)
+            
+        elif action == "stop":
+            result = ec2_service.stop_instance(instance_id, region)
+            if 'error' in result:
+                modal = action_result_modal("Stop Instance", result['error'], False)
+            else:
+                modal = action_result_modal("Stop Instance", result['success'], True)
+            client.views_push(view=modal)
+            
+        elif action == "status":
+            status = ec2_service.get_instance_status(instance_id, region)
+            if 'error' in status:
+                modal = action_result_modal("Instance Status", status['error'], False)
+            else:
+                modal = instance_status_modal(status)
+            client.views_push(view=modal)
